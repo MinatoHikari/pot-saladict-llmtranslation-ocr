@@ -56,13 +56,10 @@
 
 ## Bob 版插件（macOS）
 
-`bob/` 目录提供 Bob（macOS 划词翻译软件）的同功能插件：
+Bob（macOS 划词翻译软件）的同功能插件在独立仓库发布，端点预设、默认模型与配置项和上面的 Saladict 版完全一致：
 
-- `dist/bob/com.saladict.bob.llm-translate.bobplugin` — 翻译
-- `dist/bob/com.saladict.bob.llm-ocr.bobplugin` — 截图识别（OCR）
-- `dist/bob/com.saladict.bob.baimiao-ocr.bobplugin` — 白描 OCR（按白描网页版 v2 接口实现，账号/匿名模式，设备与会话持久化；源码见 [MinatoHikari/pot-saladict-baimiao-ocrv2](https://github.com/MinatoHikari/pot-saladict-baimiao-ocrv2)）
-
-端点预设、默认模型与配置项和上面的 Saladict 版完全一致，双击 `.bobplugin` 安装后在 Bob 的插件设置里填 API Key 即可。打包：`python bob/build.py`（`.bobplugin` 本质是 zip，`info.json`/`main.js`/`icon.png` 必须在压缩包根目录）。测试：`bun bob/test.mjs`（覆盖三个插件）。
+- **DeepSeek / GLM 翻译 + 识别**：[MinatoHikari/bob-llmtranslation-ocr](https://github.com/MinatoHikari/bob-llmtranslation-ocr)，从其 Releases 下载 `.bobplugin`，双击安装后在 Bob 的插件设置里填 API Key 即可
+- **白描 OCR**：[MinatoHikari/bob-baimiao-ocrv2](https://github.com/MinatoHikari/bob-baimiao-ocrv2)（白描网页版 v2 接口，账号/匿名模式；Saladict 版源码见 [pot-saladict-baimiao-ocrv2](https://github.com/MinatoHikari/pot-saladict-baimiao-ocrv2)）
 
 ## 常见问题
 

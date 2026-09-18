@@ -1,6 +1,9 @@
 # 白描插件（独立仓库：MinatoHikari/pot-saladict-baimiao-ocrv2）
 baimiao-ocr/
 
+# Bob 版插件（独立仓库：MinatoHikari/bob-llmtranslation-ocr）
+bob/
+
 # 本地 DeepSeek-OCR 部署（llama.cpp + GGUF 模型，体积大不入库）
 local-deepseek-ocr/
 

@@ -17,22 +17,15 @@ jobs:
           python-version: '3.x'
       - name: Package .potext
         run: python build.py
-      - name: Package .bobplugin
-        run: python bob/build.py
-      - name: Package baimiao .bobplugin
-        run: python bob/baimiao/build.py
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: saladict-plugins
           path: |
             dist/*.potext
-            dist/bob/*.bobplugin
       - name: Release on tag
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags')
         with:
-          files: |
-            dist/*.potext
-            dist/bob/*.bobplugin
+          files: dist/*.potext
           generate_release_notes: true
