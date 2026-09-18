@@ -7,7 +7,9 @@ var ENDPOINTS = {
     zai: 'https://api.z.ai/api/paas/v4',
     zai_coding: 'https://api.z.ai/api/coding/paas/v4',
     bigmodel: 'https://open.bigmodel.cn/api/paas/v4',
-    bigmodel_coding: 'https://open.bigmodel.cn/api/coding/paas/v4'
+    bigmodel_coding: 'https://open.bigmodel.cn/api/coding/paas/v4',
+    zen: 'https://opencode.ai/zen/v1',
+    go: 'https://opencode.ai/zen/go/v1'
 };
 
 // pot 语言代码 -> 语言名（与 info.json 的 language 表保持一致）
@@ -46,8 +48,32 @@ var LANGUAGE = {
     he: 'Hebrew'
 };
 
-// DeepSeek-OCR 官方提示词格式，输出最干净；也可在配置里自定义
-var DEFAULT_OCR_PROMPT = 'Free OCR.';
+// 提示词显式禁止翻译与附加标签；Free OCR. 为 GLM 视觉模型的训练格式
+var DEFAULT_OCR_PROMPT =
+    'Free OCR. Recognize ALL text in the image and output it verbatim in the original language, keeping the original line breaks. ' +
+    'Do NOT translate. Do NOT add any headings, labels (such as OCR Result or Translation), markdown formatting or explanations. ' +
+    'Output only the recognized text.';
+
+// 清洗模型自行附加的内容：剥离 OCR Result/识别结果 标签前缀；
+// 出现 Translation/翻译 小节时丢弃该行及之后全部内容（模型自作主张的翻译）
+function sanitizeOcrText(text) {
+    var lines = String(text).split('\n');
+    var out = [];
+    for (var i = 0; i < lines.length; i++) {
+        var trimmed = lines[i].replace(/\s+$/, '');
+        if (/^(\*{1,2}|_{1,2})?\s*(translation|译文|翻译)\s*(\*{1,2}|_{1,2})?\s*[:：]\s*(\*{1,2}|_{1,2})?\s*/i.test(trimmed)) {
+            break;
+        }
+        var label = trimmed.match(/^(\*{1,2}|_{1,2})?\s*(ocr\s*result|ocr结果|识别结果)\s*(\*{1,2}|_{1,2})?\s*[:：]\s*(\*{1,2}|_{1,2})?\s*/i);
+        if (label) {
+            var rest = trimmed.slice(label[0].length).trim();
+            if (rest) out.push(rest);
+            continue;
+        }
+        out.push(lines[i]);
+    }
+    return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
 
 function isCustomEndpoint(config) {
     return (config.customEndpoint || '').trim().length > 0 || config.endpoint === 'custom';
@@ -79,8 +105,7 @@ function resolveModel(config, defaults) {
     var model = (config.model || '').trim();
     if (model) return model;
     if (isCustomEndpoint(config)) throw '使用自定义接口时请填写模型名称（如 DeepSeek-OCR 填 deepseek-ai/DeepSeek-OCR-GGUF）';
-    if (resolveEndpoint(config) === 'deepseek') return defaults.deepseek;
-    return defaults.glm;
+    return defaults[resolveEndpoint(config)] || defaults.glm;
 }
 
 function formatHttpError(res) {
@@ -160,7 +185,17 @@ async function recognize(base64, lang, options) {
     var config = options.config || {};
     if (!base64) throw '未收到图片数据';
 
-    var model = resolveModel(config, { deepseek: 'deepseek-flash', glm: 'glm-4.6v' });
+    // Zen 上没有 deepseek-v4.1-flash，视觉用 glm-5.3-flash；Go 用 stable 的 deepseek-v4.1-flash（均支持图片输入）
+    var model = resolveModel(config, {
+        deepseek: 'deepseek-flash',
+        zai: 'glm-4.6v',
+        zai_coding: 'glm-4.6v',
+        bigmodel: 'glm-4.6v',
+        bigmodel_coding: 'glm-4.6v',
+        zen: 'glm-5.3-flash',
+        go: 'deepseek-v4.1-flash',
+        glm: 'glm-4.6v'
+    });
 
     var customPrompt = (config.ocrPrompt || '').trim();
     var prompt = customPrompt || DEFAULT_OCR_PROMPT;
@@ -187,5 +222,5 @@ async function recognize(base64, lang, options) {
     }
 
     var data = await chatCompletion(options, body);
-    return extractContent(data);
+    return sanitizeOcrText(extractContent(data));
 }

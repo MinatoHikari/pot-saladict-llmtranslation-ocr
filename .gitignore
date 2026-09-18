@@ -19,3 +19,9 @@ test/baimiao.test.mjs
 # Python
 __pycache__/
 *.pyc
+
+# OS / 编辑器杂项
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/

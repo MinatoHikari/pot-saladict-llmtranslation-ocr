@@ -7,7 +7,9 @@ var ENDPOINTS = {
     zai: 'https://api.z.ai/api/paas/v4',
     zai_coding: 'https://api.z.ai/api/coding/paas/v4',
     bigmodel: 'https://open.bigmodel.cn/api/paas/v4',
-    bigmodel_coding: 'https://open.bigmodel.cn/api/coding/paas/v4'
+    bigmodel_coding: 'https://open.bigmodel.cn/api/coding/paas/v4',
+    zen: 'https://opencode.ai/zen/v1',
+    go: 'https://opencode.ai/zen/go/v1'
 };
 
 // pot 语言代码 -> 提示词用语言名（与 info.json 的 language 表保持一致）
@@ -76,8 +78,7 @@ function resolveModel(config, defaults) {
     var model = (config.model || '').trim();
     if (model) return model;
     if (isCustomEndpoint(config)) throw '使用自定义接口时请填写模型名称';
-    if (resolveEndpoint(config) === 'deepseek') return defaults.deepseek;
-    return defaults.glm;
+    return defaults[resolveEndpoint(config)] || defaults.glm;
 }
 
 function formatHttpError(res) {
@@ -158,7 +159,17 @@ async function translate(text, from, to, options) {
     text = text == null ? '' : String(text);
     if (!text.trim()) return '';
 
-    var model = resolveModel(config, { deepseek: 'deepseek-chat', glm: 'glm-4.7' });
+    // Zen/Go 网关上 chat/completions 路径最便宜的是 glm-5.3-flash（GPT 系走 responses、Claude 系走 messages，本插件不支持）
+    var model = resolveModel(config, {
+        deepseek: 'deepseek-chat',
+        zai: 'glm-4.7',
+        zai_coding: 'glm-4.7',
+        bigmodel: 'glm-4.7',
+        bigmodel_coding: 'glm-4.7',
+        zen: 'glm-5.3-flash',
+        go: 'glm-5.3-flash',
+        glm: 'glm-4.7'
+    });
     var target = LANGUAGE[to] || to;
     var source = LANGUAGE[from] || from;
 

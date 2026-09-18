@@ -116,6 +116,25 @@ section('translate 插件');
 }
 {
     const captured = [];
+    const utils = makeUtils(okRes({ choices: [{ message: { content: 'ok' } }] }), captured);
+    const result = await translate('hello', 'en', 'zh_cn', { config: { endpoint: 'zen', apiKey: 'sk-oc' }, utils });
+    const p = payloadOf(captured);
+    check('OpenCode Zen URL 正确', captured[0].url === 'https://opencode.ai/zen/v1/chat/completions', captured[0].url);
+    check('Zen 默认模型 glm-5.3-flash', p.model === 'glm-5.3-flash', p.model);
+    check('Zen GLM 发送 thinking disabled', p.thinking && p.thinking.type === 'disabled', p.thinking);
+    check('Zen 正常返回', result === 'ok', result);
+}
+{
+    const captured = [];
+    const utils = makeUtils(okRes({ choices: [{ message: { content: 'ok' } }] }), captured);
+    await translate('hello', 'en', 'zh_cn', { config: { endpoint: 'go', apiKey: 'sk-go', model: 'deepseek-v4.1-flash' }, utils });
+    const p = payloadOf(captured);
+    check('OpenCode Go URL 正确', captured[0].url === 'https://opencode.ai/zen/go/v1/chat/completions', captured[0].url);
+    check('Go 自定义模型生效', p.model === 'deepseek-v4.1-flash', p.model);
+    check('Go 非 GLM 模型不发送 thinking', !('thinking' in p));
+}
+{
+    const captured = [];
     const utils = makeUtils(okRes({ choices: [{ message: { content: 'y' } }] }), captured);
     await translate('x', 'auto', 'zh_cn', { config: { endpoint: 'zai', apiKey: 'k', customEndpoint: 'http://127.0.0.1:8080/v1', model: 'glm-4.7' }, utils });
     check('自定义接口地址优先', captured[0].url === 'http://127.0.0.1:8080/v1/chat/completions', captured[0].url);
@@ -204,7 +223,7 @@ section('recognize 插件');
     const content = p.messages[0].content;
     check('消息角色为 user（DeepSeek 要求）', p.messages[0].role === 'user');
     check('图片为 data URL base64', content[0].type === 'image_url' && content[0].image_url.url === 'data:image/png;base64,' + PNG_B64);
-    check('默认使用 Free OCR 提示词', content[1].text === 'Free OCR.', content[1].text);
+    check('默认提示词禁止翻译并含 Free OCR.', content[1].text.includes('Free OCR.') && content[1].text.includes('Do NOT translate'), content[1].text);
     check('GLM 默认关闭 thinking', p.thinking && p.thinking.type === 'disabled', p.thinking);
     check('返回识别文本', result === '识别结果文本', result);
 }
@@ -215,7 +234,7 @@ section('recognize 插件');
     const p = payloadOf(captured);
     check('DeepSeek 默认视觉模型 deepseek-flash', p.model === 'deepseek-flash', p.model);
     check('DeepSeek 不发送 thinking', !('thinking' in p));
-    check('deepseek 端点同样默认 Free OCR 提示词', p.messages[0].content[1].text === 'Free OCR.');
+    check('deepseek 端点同样默认 Free OCR 提示词', p.messages[0].content[1].text.includes('Free OCR.'));
 }
 {
     const captured = [];
@@ -224,6 +243,24 @@ section('recognize 插件');
     const p = payloadOf(captured);
     check('Z.ai Coding Plan URL', captured[0].url === 'https://api.z.ai/api/coding/paas/v4/chat/completions', captured[0].url);
     check('auto 语言不加提示', !p.messages[0].content[1].text.includes('The text is in'), p.messages[0].content[1].text);
+}
+{
+    const captured = [];
+    const utils = makeUtils(okRes({ choices: [{ message: { content: 'txt' } }] }), captured);
+    await recognize(PNG_B64, 'en', { config: { endpoint: 'zen', apiKey: 'sk-oc' }, utils });
+    const p = payloadOf(captured);
+    check('OpenCode Zen URL 正确', captured[0].url === 'https://opencode.ai/zen/v1/chat/completions', captured[0].url);
+    check('Zen 默认视觉模型 glm-5.3-flash', p.model === 'glm-5.3-flash', p.model);
+    check('Zen GLM 视觉模型默认关闭 thinking', p.thinking && p.thinking.type === 'disabled', p.thinking);
+}
+{
+    const captured = [];
+    const utils = makeUtils(okRes({ choices: [{ message: { content: 'txt' } }] }), captured);
+    await recognize(PNG_B64, 'en', { config: { endpoint: 'go', apiKey: 'sk-go' }, utils });
+    const p = payloadOf(captured);
+    check('OpenCode Go URL 正确', captured[0].url === 'https://opencode.ai/zen/go/v1/chat/completions', captured[0].url);
+    check('Go 默认视觉模型 deepseek-v4.1-flash', p.model === 'deepseek-v4.1-flash', p.model);
+    check('Go DeepSeek 视觉模型不发送 thinking', !('thinking' in p));
 }
 {
     const captured = [];
